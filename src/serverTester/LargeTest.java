@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JOptionPane;
 
@@ -18,6 +19,8 @@ public class LargeTest {
 	private Hashtable<String, String> onlineMessages;
 	
 	private Hashtable<String, String> connectMessages;
+	
+	private Hashtable<String, String> publishMessages;
 	
 	public LargeTest(int numberPeers, int initialPort, GraphServerTester tester) {
 		this.tester = tester;
@@ -44,10 +47,12 @@ public class LargeTest {
 		//Arrays.asList(ids)); //set initial capacity and makes a list from the generated ids
 		
 		onlineMessages = new Hashtable<String, String>(numberPeers);
-		connectMessages = new Hashtable<String, String>();
+		connectMessages = new Hashtable<String, String>(numberPeers);
+		publishMessages = new Hashtable<String, String>(numberPeers);
 		
 		generateOnlineMessages();
 		generateConnectMessages();
+		generatePublishMessages();
 	}
 	
 	private void generateOnlineMessages() {
@@ -63,9 +68,58 @@ public class LargeTest {
 	}
 	
 	private void generateConnectMessages() {
-		for(int i=0;i<gnutellaIDs.size()-2;i++) {
+		Random rand = new Random(System.currentTimeMillis());
+		int i=0;
+		for(String id : gnutellaIDs) {
 			String time = Long.toString(System.currentTimeMillis());
-			connectMessages.put(gnutellaIDs.get(i), time+"     "+gnutellaIDs.get(i)+"     CONNECT     "+gnutellaIDs.get(i+1)+"\n");
+			
+			String otherPeer;
+			
+			do {
+				otherPeer = gnutellaIDs.get(rand.nextInt(gnutellaIDs.size()-1));
+			}while(otherPeer.equals(id)); //don't connect to themself
+			
+			connectMessages.put(id, time+"     "+id+"     CONNECT     "+otherPeer+"\n");
+			
+			i++;
+		}
+	}
+	
+	private void generatePublishMessages() {
+		Random rand = new Random(System.currentTimeMillis());
+		int i=0;
+		for(String id : gnutellaIDs) {
+			String time = Long.toString(System.currentTimeMillis());
+			
+			int communityID;
+			int documentID;
+			
+			communityID = rand.nextInt(10)+500;
+			documentID = rand.nextInt(10)+800;
+			
+			publishMessages.put(id, time+"     "+id+"     PUBLISH     "+Integer.toHexString(communityID)+
+					"     "+Integer.toHexString(documentID)+"\n");
+			
+			i++;
+		}
+	}
+	
+	private void generateLinkDocumentMessages() {
+		Random rand = new Random(System.currentTimeMillis());
+		int i=0;
+		for(String id : gnutellaIDs) {
+			String time = Long.toString(System.currentTimeMillis());
+			
+			int communityID;
+			int documentID;
+			
+			communityID = rand.nextInt(10)+500;
+			documentID = rand.nextInt(10)+800;
+			
+			publishMessages.put(id, time+"     "+id+"     PUBLISH     "+Integer.toHexString(communityID)+
+					"     "+Integer.toHexString(documentID)+"\n");
+			
+			i++;
 		}
 	}
 	
@@ -74,7 +128,6 @@ public class LargeTest {
 			for(String peer : peerSocket.keySet()) {
 				tester.sendMessage(peerSocket.get(peer), onlineMessages.get(peer));
 				Thread.sleep(100); //sleep .1 second between sending again
-				peerSocket.get(peer).close();
 			}
 		} catch (InterruptedException ignored) {
 			//e.printStackTrace();
@@ -82,19 +135,34 @@ public class LargeTest {
 	}
 	
 	public void sendConnectMessages() {
-		/*int i=0;
-		for(String message : connectMessages) {
-			try { 
-				tester.sendMessage(new DatagramSocket(initialPort+i), message);
+		try { 
+			for(String peer : peerSocket.keySet()) {
+				tester.sendMessage(peerSocket.get(peer), connectMessages.get(peer));
 				Thread.sleep(100); //sleep .1 second between sending again
-			} catch(SocketException se) {
-				System.out.print("Not Sent: "+message);
-				System.out.println("\t"+se.getMessage());
-			} catch (InterruptedException ignored) {
-				//e.printStackTrace();
 			}
-			i++;
-		}*/
+		} catch (InterruptedException ignored) {
+			//e.printStackTrace();
+		}
+	}
+	
+	public void sendPublishMessages() {
+		try { 
+			for(String peer : peerSocket.keySet()) {
+				tester.sendMessage(peerSocket.get(peer), publishMessages.get(peer));
+				Thread.sleep(100); //sleep .1 second between sending again
+			}
+		} catch (InterruptedException ignored) {
+			//e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * close all sockets for later use
+	 */
+	public void end() {
+		for(String peer : peerSocket.keySet()) {
+			peerSocket.get(peer).close();
+		}
 	}
 	
 }

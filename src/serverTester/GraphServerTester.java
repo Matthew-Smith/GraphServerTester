@@ -366,7 +366,8 @@ public class GraphServerTester extends JApplet {
 		previewButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				JOptionPane.showMessageDialog(rootPane, buildSendMessage());
+				JOptionPane.showMessageDialog(rootPane, buildSendMessage(), 
+						"Preview", JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
 
@@ -516,6 +517,8 @@ public class GraphServerTester extends JApplet {
 							LargeTest sim = new LargeTest(numberPeers, startingPort, tester);
 							sim.sendOnlineMessages();
 							sim.sendConnectMessages();
+							sim.sendPublishMessages();
+							sim.end();
 							JOptionPane.showMessageDialog(rootPane, "Messages Sent", "Sent", JOptionPane.INFORMATION_MESSAGE);
 						}
 					});
